@@ -10,7 +10,7 @@ export class Vector3D {
     }
 
     subtract(vec2) {
-        return add(new Vector3D(-vec2.x, -vec2.y, -vec2.z));
+        return this.add(new Vector3D(-vec2.x, -vec2.y, -vec2.z));
     }
 
     multiply(vec2) {//because of the dynamic type system, if you want to multiply by a scalar, use the Vector3D constructor with one parameter
@@ -22,12 +22,12 @@ export class Vector3D {
         return new Vector3D(this.x / scalar, this.y / scalar, this.z / scalar);
     }
 
-    magnitude() {//distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2) + pow(z2 - z1, 2))
-        return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2));
+    magnitude(center = new Vector3D(0, 0, 0)) {//distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2) + pow(z2 - z1, 2))
+        return Math.sqrt(Math.pow(this.x - center.x, 2) + Math.pow(this.y - center.y, 2) + Math.pow(this.z - center.z, 2));
     }
 
-    unitVector() {//this may not be correct
-        let m = this.magnitude();
+    unitVector(center = new Vector3D(0, 0, 0)) {//optional center to pass in so the magnitude is not from origin to endpoint
+        let m = this.magnitude(center);
         return new Vector3D(this.x / m, this.y / m, this.z / m);
     }
 
