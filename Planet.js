@@ -1,5 +1,6 @@
 import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r112/build/three.module.js';
 import {Vector3D} from "./Vector3D.js";
+import {vertexShader, fragmentShader} from "./Shaders.js";
 
 function main() {
     const canvas = document.querySelector('#mainCanvas');
@@ -133,7 +134,7 @@ function main() {
         faces.push([ one, two, three ]);
     }
 
-    for(let i = 0; i < 2; i++) {//8 triangles remain between //TODO sweep under the kitchen table and brush Roxy, go to Outback Steakhouse
+    for(let i = 0; i < 2; i++) {//8 triangles remain between
         one = (0 + 3 * i) % 12;//handles 0, 8, 4 and 3, 7, 11
         two = (4 + 3 * i) % 12;
         three = (8 + 3 * i) % 12;
@@ -159,11 +160,15 @@ function main() {
         //console.log(planet.faces[planet.faces.length - 1]);
     }
 
-    let iterations = 5;
+    //points are added in threes per face and the total amount of faces can be found with 20 * 3 ^ i with the current iteration found with (20 * 3 ^ i) - (20 * 3 ^ (i - 1)) where i is NOT zero
+    //to navigate from close point to close point, the changing factor for the index is the iteration the point was generated in added to the current index of the overall points
+    //TODO remember that starting with 20 faces does not mean starting with 20 points, I have 12 points to start with and add 3 per face, per iteration
+
+    let iterations = 5;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
     for(let i = 0; i < iterations; i++) {
         let frozenFacesLength = faces.length;
         for(let j = 0; j < frozenFacesLength; j++) {
-            //everything is clockwise!
+            //everything is clockwise!//TODO I think faces are counter clockwise by default in documentation, so maybe I messed up the order earlier?
             //current face is faces[j] with points accessible as vertices[faces[j][0]], vertices[faces[j][1]], and vertices[faces[j][2]]
             let vec1 = new Vector3D(vertices[faces[j][0]][0], vertices[faces[j][0]][1], vertices[faces[j][0]][2]);//point 1
             let vec2 = new Vector3D(vertices[faces[j][1]][0], vertices[faces[j][1]][1], vertices[faces[j][1]][2]);//point 2
@@ -187,6 +192,16 @@ function main() {
         }
     }
 
+    //TODO so I think the fastest and best way to add noise is using the vertex shader
+    //TODO I'll need to use the current vertex point info as a vector from the center vector 3 and add to the magnitude of the vector by the generated noise value
+    //TODO or do I need to somehow get the distance back and add it to the radius here?
+    //TODO or do I need to generate the shape entirely inside the vertex shader somehow and not here at all?
+    //the vertex shader executes per vertex, so whatever code in there needs to be designed to only relate to that single, current point
+    //TODO maybe pass in the radius and center, and try to project the current vertex along the direction between the center and current vertex by the amount given by the noise algorithm
+    //TODO test that the vector math is correct when doing this by moving the planet to another location and seeing that the surface moves to the new location
+    //TODO get the point the same way as before, get the unit vector for the direction and then move the point out by the radius + noise value
+    //TODO there might be a simpler way of just adding the noise value, but not sure yet nope, I checked online
+
     //need this down here because vertices and faces are both being generated based on previous data
     //this line still needs to come before setting the face data in the mesh though
     //planet.vertices = vertices;
@@ -202,19 +217,22 @@ function main() {
     //planet.computeFaceNormals();//for lighting on phong material
 
     function makePlanetInstance(planet, color, x) {
-        /*let uniforms = {
-            delta: {value: 0}
-        };*/
+        let uniforms = {
+            delta: {value: 0},
+            radius: {value: hypotenuse},
+            center: {value: center}
+        };
 
-        const material = new THREE.MeshBasicMaterial({color, wireframe: true});
+        //const material = new THREE.MeshBasicMaterial({color, wireframe: true});//old current
+
         //const material = new THREE.MeshPhongMaterial({color});
         //const material = new THREE.ShaderMaterial({color});//this somehow makes red
 
-        /*const material = new THREE.ShaderMaterial({
+        const material = new THREE.ShaderMaterial({
             uniforms: uniforms,
             vertexShader: vertexShader(),
             fragmentShader: fragmentShader()
-        });*/
+        });
 
         const plnt = new THREE.Mesh(planet, material);
         scene.add(plnt);
@@ -250,13 +268,13 @@ function main() {
         planets.forEach((plnt, ndx) => {
             const speed = 1 + ndx * .1;
             const rot = time * speed / 2;
-            plnt.rotation.x = rot;
-            plnt.rotation.y = rot;
-            plnt.rotation.z = rot;
-            /*if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
+            //plnt.rotation.x = rot;
+            //plnt.rotation.y = rot;
+            //plnt.rotation.z = rot;
+            if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
                 plnt.material.uniforms.delta.value = 0.0;
             else
-                plnt.material.uniforms.delta.value += 0.05;*/
+                plnt.material.uniforms.delta.value += 0.05;
         });
 
         renderer.render(scene, camera);
