@@ -7,10 +7,10 @@ export function vertexShader() {//executes per vertex
         
         float magnitude(vec3 end)
         {
-            if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
+            //if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
                 return sqrt(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0));
-            else
-                return -sqrt(abs(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0)));
+            //else
+                //return -sqrt(abs(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0)));
         }
         
         vec4 unitVector(vec3 end)//assumed center is delta variable center, doesn't need returned with end point
@@ -38,7 +38,7 @@ export function vertexShader() {//executes per vertex
             //float noiseVal = rand(pos.z);
             
             vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
-            gl_Position = projectionMatrix * modelViewPosition + unitVector(pos) * vec4(rand(pos.x * 100.0 + delta), rand(pos.y * 100.0 + delta), rand(pos.z * 100.0 + delta), 1.0);// * vec4(radius, radius, radius, 1.0);//using the camera position to get the camera's relationship to the model in the scene, gl_Position is the exact vertex position in our scene
+            gl_Position = projectionMatrix * modelViewPosition + unitVector(pos) * vec4(rand(pos.x * 20.0 + delta), rand(pos.y * 20.0 + delta), rand(pos.z * 20.0 + delta), 1.0);// * vec4(radius, radius, radius, 1.0);//using the camera position to get the camera's relationship to the model in the scene, gl_Position is the exact vertex position in our scene
         }
     `
 }
@@ -49,6 +49,14 @@ export function fragmentShader() {//executes per pixel
         uniform float delta;//I think this is current time for use in animation changes
         uniform float radius;
         uniform vec3 center;
+        
+        float magnitude(vec3 end)
+        {
+            //if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
+                return sqrt(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0));
+            //else
+                //return -sqrt(abs(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0)));
+        }
         
         //  Function from Iñigo Quiles
         //  https://www.shadertoy.com/view/MsS3Wc
@@ -69,7 +77,7 @@ export function fragmentShader() {//executes per pixel
         
             // We map x (0.0 - 1.0) to the hue (0.0 - 1.0)
             // And the y (0.0 - 1.0) to the brightness
-            vec3 color = hsb2rgb(vec3(pos.y / 4.0 - delta / 15.0,1.0,1.0));//changed y to 1.0 to keep only colors and replaced x with y to change from horizontal to vertical, subtracted delta for movement direction
+            vec3 color = hsb2rgb(vec3(magnitude(pos) * 500.0 - delta / 15.0,1.0,1.0));//changed y to 1.0 to keep only colors and replaced x with y to change from horizontal to vertical, subtracted delta for movement direction
         
             gl_FragColor = vec4(color, 1.0);//rgba used to set the color of the current pixel, currently all red
             
