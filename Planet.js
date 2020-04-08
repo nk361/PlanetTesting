@@ -164,7 +164,7 @@ function main() {
     //to navigate from close point to close point, the changing factor for the index is the iteration the point was generated in added to the current index of the overall points
     //TODO remember that starting with 20 faces does not mean starting with 20 points, I have 12 points to start with and add 3 per face, per iteration
 
-    let iterations = 5;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
+    let iterations = 4;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
     for(let i = 0; i < iterations; i++) {
         let frozenFacesLength = faces.length;
         for(let j = 0; j < frozenFacesLength; j++) {
@@ -269,7 +269,7 @@ function main() {
             const speed = 1 + ndx * .1;
             const rot = time * speed / 2;
             //plnt.rotation.x = rot;
-            //plnt.rotation.y = rot;
+            plnt.rotation.y = rot;
             //plnt.rotation.z = rot;
             if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
                 plnt.material.uniforms.delta.value = 0.0;
