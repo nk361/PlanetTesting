@@ -1,5 +1,6 @@
 export function vertexShader() {//executes per vertex
     return `
+        varying float noiseVal;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;
         uniform float radius;
@@ -88,10 +89,10 @@ export function vertexShader() {//executes per vertex
                 //return -sqrt(abs(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0)));
         }
         
-        vec4 unitVector(vec3 end)//assumed center is delta variable center, doesn't need returned with end point
+        vec3 unitVector(vec3 end)//assumed center is delta variable center, doesn't need returned with end point
         {
             float mag = magnitude(end);
-            return vec4((center.x + end.x) / mag, (center.y + end.y) / mag, (center.z + end.z) / mag, 1.0);
+            return vec3((center.x + end.x) / mag, (center.y + end.y) / mag, (center.z + end.z) / mag);
         }
         
         float rand(float x)
@@ -110,19 +111,25 @@ export function vertexShader() {//executes per vertex
             
             //oh it just becomes pos I think? might need to set position to it too
             
-            float noiseVal = snoise(vec3(pos.x + delta / 20.0, pos.y, pos.z)) / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
+            float changeBy = delta / 15.0;
+            
+            noiseVal = snoise(vec3(pos.x + changeBy, pos.y + changeBy, pos.z + changeBy));// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
             //float noiseVal = rand(pos.z);
             
-            vec4 modelViewPosition = modelViewMatrix * (vec4(position, 1.0) + unitVector(pos) * vec4(noiseVal, noiseVal, noiseVal, 1.0));//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
+            noiseVal /= 3.0;//scale the amplitude
+            
+            vec4 modelViewPosition = modelViewMatrix * ((vec4(position + unitVector(pos) * vec3(noiseVal, noiseVal, noiseVal), 1.0)));//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
             gl_Position = projectionMatrix * modelViewPosition;// + unitVector(pos);// * vec4(rand(noiseVal * 10.0), rand(noiseVal * 10.0), rand(noiseVal * 10.0), 1.0);// * vec4(radius, radius, radius, 1.0);//using the camera position to get the camera's relationship to the model in the scene, gl_Position is the exact vertex position in our scene
             
-            pos = vec3(gl_Position.x, gl_Position.y, gl_Position.z);//this is needed to update pos for use in the fragment shader based on the new heights instead of the original sphere heights
+            //I think I need this set if I rely on it in the fragment shader
+            //pos = vec3(gl_Position.x, gl_Position.y, gl_Position.z);//this is needed to update pos for use in the fragment shader based on the new heights instead of the original sphere heights
         }
     `
 }
 
 export function fragmentShader() {//executes per pixel
     return `
+        varying float noiseVal;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;//I think this is current time for use in animation changes
         uniform float radius;
@@ -156,8 +163,13 @@ export function fragmentShader() {//executes per pixel
             // We map x (0.0 - 1.0) to the hue (0.0 - 1.0)
             // And the y (0.0 - 1.0) to the brightness
             //vec3 color = hsb2rgb(vec3(magnitude(pos) * 5.0 + delta / 15.0,1.0,1.0));//changed y to 1.0 to keep only colors and replaced x with y to change from horizontal to vertical, subtracted delta for movement direction
-            //magnitude seems to be in the range of 26.0 to 204.0
-            float single = magnitude(pos) / 204.0 * 26.0;
+            
+            //now I have the generated noise value per vertex that I could color based on, but, vertex shader is per vertex and fragment is per pixel, I don't know if that'll be a problem
+            //having the noiseval passed in lets me work with it directly instead of trying to derive it from the magnitude from the center coords
+            
+            float single = noiseVal;
+            
+            //float single = magnitude(pos) / ((radius * 100.0));//the first number reduces the radius to 0 and the second number reduces the noise value added to the radius to 0
             vec3 color = vec3(single, single, single);
         
             gl_FragColor = vec4(color, 1.0);//rgba used to set the color of the current pixel, currently all red

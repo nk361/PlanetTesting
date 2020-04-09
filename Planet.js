@@ -164,7 +164,7 @@ function main() {
     //to navigate from close point to close point, the changing factor for the index is the iteration the point was generated in added to the current index of the overall points
     //TODO remember that starting with 20 faces does not mean starting with 20 points, I have 12 points to start with and add 3 per face, per iteration
 
-    let iterations = 4;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
+    let iterations = 6;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
     for(let i = 0; i < iterations; i++) {
         let frozenFacesLength = faces.length;
         for(let j = 0; j < frozenFacesLength; j++) {
@@ -206,7 +206,7 @@ function main() {
     //this line still needs to come before setting the face data in the mesh though
     //planet.vertices = vertices;
     for(let i = 0; i < vertices.length; i++)//calling new here for both faces and vertices prevents calling new on vertices and faces that I remove when generating new info
-        planet.vertices.push(new THREE.Vector3(vertices[i][0], vertices[i][1], vertices[i][2]));
+        planet.vertices.push(new THREE.Vector3(vertices[i][2], vertices[i][1], vertices[i][0]));//TODO swapping the first and last put all the vertices in the correct orientation to apply noise
 
     //planet.faces = faces;
     for(let i = 0; i < faces.length; i++)
@@ -215,6 +215,8 @@ function main() {
     planet.translate(center.x, center.y, center.z);//move the points here, all at once to make it so much easier
 
     //planet.computeFaceNormals();//for lighting on phong material
+
+    //console.log(hypotenuse);
 
     function makePlanetInstance(planet, color, x) {
         let uniforms = {
@@ -269,7 +271,7 @@ function main() {
             const speed = 1 + ndx * .1;
             const rot = time * speed / 2;
             //plnt.rotation.x = rot;
-            plnt.rotation.y = rot;
+            //plnt.rotation.y = rot;
             //plnt.rotation.z = rot;
             if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
                 plnt.material.uniforms.delta.value = 0.0;
