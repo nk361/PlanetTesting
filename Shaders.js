@@ -196,7 +196,7 @@ export function fragmentShader() {//executes per pixel
             
             for(int i = 0; i < colorAmount - 1; i++)
                 if(((1.0 / float(colorAmount) * float(i)) < noiseInRange) && ((1.0 / float(colorAmount) * float(i + 1)) > noiseInRange))
-                    currentColor = mix(myColors[i], myColors[i + 1], noiseInRange - ((1.0 / float(colorAmount) * float(i)) * (1.0 / float(colorAmount))));
+                    currentColor = mix(myColors[i], myColors[i + 1], smoothstep((1.0 / float(colorAmount) * float(i)), (1.0 / float(colorAmount) * float(i + 1)), noiseInRange));
             
             return currentColor;
         }
