@@ -1,5 +1,6 @@
 export function vertexShader() {//executes per vertex
     return `
+        varying float amplitudeScale;
         varying float noiseVal;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;
@@ -116,7 +117,10 @@ export function vertexShader() {//executes per vertex
             noiseVal = snoise(vec3(pos.x + changeBy, pos.y + changeBy, pos.z + changeBy));// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
             //float noiseVal = rand(pos.z);
             
-            noiseVal /= 3.0;//scale the amplitude
+            amplitudeScale = 3.0;//divided by the number here to scale down, while color value multiplied in fragment shader sot scale up for better color range
+            float maxNoiseVal = 1.0 / amplitudeScale;//min is 0 max depends on amplitude changes
+            
+            noiseVal /= amplitudeScale;//scale the amplitude
             
             vec4 modelViewPosition = modelViewMatrix * ((vec4(position + unitVector(pos) * vec3(noiseVal, noiseVal, noiseVal), 1.0)));//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
             gl_Position = projectionMatrix * modelViewPosition;// + unitVector(pos);// * vec4(rand(noiseVal * 10.0), rand(noiseVal * 10.0), rand(noiseVal * 10.0), 1.0);// * vec4(radius, radius, radius, 1.0);//using the camera position to get the camera's relationship to the model in the scene, gl_Position is the exact vertex position in our scene
@@ -129,6 +133,7 @@ export function vertexShader() {//executes per vertex
 
 export function fragmentShader() {//executes per pixel
     return `
+        varying float amplitudeScale;
         varying float noiseVal;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;//I think this is current time for use in animation changes
@@ -167,7 +172,7 @@ export function fragmentShader() {//executes per pixel
             //now I have the generated noise value per vertex that I could color based on, but, vertex shader is per vertex and fragment is per pixel, I don't know if that'll be a problem
             //having the noiseval passed in lets me work with it directly instead of trying to derive it from the magnitude from the center coords
             
-            float single = noiseVal;
+            float single = noiseVal * amplitudeScale;
             
             //float single = magnitude(pos) / ((radius * 100.0));//the first number reduces the radius to 0 and the second number reduces the noise value added to the radius to 0
             vec3 color = vec3(single, single, single);
