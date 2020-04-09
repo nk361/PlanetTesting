@@ -2,6 +2,7 @@ export function vertexShader() {//executes per vertex
     return `
         varying float amplitudeScale;
         varying float noiseVal;
+        varying float totalVertexNoise;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;
         uniform float radius;
@@ -122,6 +123,9 @@ export function vertexShader() {//executes per vertex
             
             noiseVal /= amplitudeScale;//scale the amplitude
             
+            totalVertexNoise = noiseVal;//TODO add all the current vertex noise layers to this for coloring in the fragment shader
+            //Will probably need to track the max possible value after all layers are added
+            
             vec4 modelViewPosition = modelViewMatrix * ((vec4(position + unitVector(pos) * vec3(noiseVal, noiseVal, noiseVal), 1.0)));//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
             gl_Position = projectionMatrix * modelViewPosition;// + unitVector(pos);// * vec4(rand(noiseVal * 10.0), rand(noiseVal * 10.0), rand(noiseVal * 10.0), 1.0);// * vec4(radius, radius, radius, 1.0);//using the camera position to get the camera's relationship to the model in the scene, gl_Position is the exact vertex position in our scene
             
@@ -135,6 +139,7 @@ export function fragmentShader() {//executes per pixel
     return `
         varying float amplitudeScale;
         varying float noiseVal;
+        varying float totalVertexNoise;
         varying vec3 pos;//varying sends this to the fragment shader, a position to let the color change related to it
         uniform float delta;//I think this is current time for use in animation changes
         uniform float radius;
@@ -159,6 +164,43 @@ export function fragmentShader() {//executes per pixel
             return c.z * mix(vec3(1.0), rgb, c.y);
         }
         
+        //vec3[4] colors = vec3[](0.5, 0.5, 0.5);
+        //int a[4] = int[4](4, 2, 0, 5, 1);
+        
+        const int colorAmount = 6;
+        vec3 myColors[colorAmount];//cannot initialize inline as far as I know
+        vec3 snowColor = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0);
+        vec3 mountainColor = vec3(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0);
+        vec3 mountainBaseColor = vec3(153.0 / 255.0, 76.0 / 255.0, 0.0 / 255.0);
+        vec3 grassColor = vec3(0.0 / 255.0, 153.0 / 255.0, 0.0 / 255.0);
+        vec3 sandColor = vec3(255.0 / 255.0, 255.0 / 255.0, 153.0 / 255.0);
+        vec3 waterColor = vec3(51.0 / 255.0, 51.0 / 255.0, 255.0 / 255.0);
+        
+        vec3 colorFromNoise(float min, float max, float noiseVal)
+        {
+            myColors[5] = snowColor;
+            myColors[4] = mountainColor;
+            myColors[3] = mountainBaseColor;
+            myColors[2] = grassColor;
+            myColors[1] = sandColor;
+            myColors[0] = waterColor;
+            
+            float noiseInRange = smoothstep(min, max, noiseVal);//figure out where the value should be in the range of 0 to 1
+            
+            //I need to get the left and right indexes of the colors based on the current noiseInRange value
+            //noiseInRange / (1.0 / colorAmount)
+            //const int index = int(noiseInRange / (1.0 / float(colorAmount)));//I think this code would work without the const array index restriction
+            //return mix(myColors[index], myColors[index + 1], noiseInRange * (1.0 / float(colorAmount)));
+            
+            vec3 currentColor = vec3(0.0, 0.0, 0.0);
+            
+            for(int i = 0; i < colorAmount - 1; i++)
+                if(((1.0 / float(colorAmount) * float(i)) < noiseInRange) && ((1.0 / float(colorAmount) * float(i + 1)) > noiseInRange))
+                    currentColor = mix(myColors[i], myColors[i + 1], noiseInRange - ((1.0 / float(colorAmount) * float(i)) * (1.0 / float(colorAmount))));
+            
+            return currentColor;
+        }
+        
         void main()
         {
             //float red = (1.0 + cos(pos.x + delta)) / 2.0;
@@ -174,8 +216,11 @@ export function fragmentShader() {//executes per pixel
             
             float single = noiseVal * amplitudeScale;
             
+           
             //float single = magnitude(pos) / ((radius * 100.0));//the first number reduces the radius to 0 and the second number reduces the noise value added to the radius to 0
-            vec3 color = vec3(single, single, single);
+            //vec3 color = vec3(single, single, single);
+        
+            vec3 color = colorFromNoise(0.0 - 1.0, 1.0 + 0.7, single);
         
             gl_FragColor = vec4(color, 1.0);//rgba used to set the color of the current pixel, currently all red
             
