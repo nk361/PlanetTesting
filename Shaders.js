@@ -86,7 +86,7 @@ export function vertexShader() {//executes per vertex
         float magnitude(vec3 end)
         {
             //if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
-                return sqrt(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0));
+                return sqrt(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0));//center needs to affect both direction (unit vector) and height (magnitude)
             //else
                 //return -sqrt(abs(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0)));
         }
@@ -94,7 +94,7 @@ export function vertexShader() {//executes per vertex
         vec3 unitVector(vec3 end)//assumed center is delta variable center, doesn't need returned with end point
         {
             float mag = magnitude(end);
-            return vec3((center.x + end.x) / mag, (center.y + end.y) / mag, (center.z + end.z) / mag);
+            return vec3((end.x - center.x) / mag, (end.y - center.y) / mag, (end.z - center.z) / mag);//center needs to affect both direction (unit vector) and height (magnitude)
         }
         
         float rand(float x)
@@ -115,7 +115,8 @@ export function vertexShader() {//executes per vertex
             
             float changeBy = delta / 15.0;
             
-            noiseVal = snoise(vec3(pos.x + changeBy, pos.y + changeBy, pos.z + changeBy));// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
+            //I THINK SIMPLEX NOISE ACTUALLY RETURNS VALUES FROM -1 to 1
+            noiseVal = (2.0 * (1.0 - abs(snoise(vec3(pos.x + changeBy, pos.y + changeBy, pos.z + changeBy)))) - 1.0);// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
             //float noiseVal = rand(pos.z);
             
             amplitudeScale = 3.0;//divided by the number here to scale down, while color value multiplied in fragment shader sot scale up for better color range
