@@ -83,6 +83,11 @@ export function vertexShader() {//executes per vertex
                                         dot(p2,x2), dot(p3,x3) ) );
         }
         
+        float mountainousNoise(vec3 v)//returns a value between -1.0 and 1.0
+        {
+            return (2.0 * (1.0 - abs(snoise(vec3(v.x, v.y, v.z)))) - 1.0);
+        }
+        
         float magnitude(vec3 end)
         {
             //if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
@@ -113,18 +118,46 @@ export function vertexShader() {//executes per vertex
             
             //oh it just becomes pos I think? might need to set position to it too
             
-            float changeBy = delta / 15.0;
+            float moveSpeed = delta / 25.0;
+            float scaleFrequency = 0.3;
             
             //I THINK SIMPLEX NOISE ACTUALLY RETURNS VALUES FROM -1 to 1
-            noiseVal = (2.0 * (1.0 - abs(snoise(vec3(pos.x + changeBy, pos.y + changeBy, pos.z + changeBy)))) - 1.0);// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
+            //noiseVal = (2.0 * (1.0 - abs(snoise(vec3((pos.x + moveSpeed) * scaleFrequency, (pos.y + moveSpeed) * scaleFrequency, (pos.z + moveSpeed) * scaleFrequency)))) - 1.0);// / 5.0; //the last division is to scale the noise amplitude and the delta division is to slow the speed of movement
+            //noiseVal = snoise(vec3(pos.x + moveSpeed, pos.y + moveSpeed, pos.z + moveSpeed));
+            
+            //noiseVal = snoise(vec3((pos.x + moveSpeed) * scaleFrequency, (pos.y + moveSpeed) * scaleFrequency, (pos.z + moveSpeed) * scaleFrequency));
+            //noiseVal = mountainousNoise(vec3((pos.x + moveSpeed) * scaleFrequency, (pos.y + moveSpeed) * scaleFrequency, (pos.z + moveSpeed) * scaleFrequency));
+            
+            const int noiseLayers = 6;
+            float layerFrequencyChange = 0.8;
+            float totalNoiseVal = 0.0;
+            float totalHeight = 0.0;
+            float currentLayerAmplitude = 0.3;//decrease over time for smaller detail
+            float layerPositionMoveBy = 5.0;
+            for(int i = 0; i < noiseLayers; i++)
+            {
+                totalNoiseVal += currentLayerAmplitude * mountainousNoise(vec3((pos.x + moveSpeed * float(i)) * scaleFrequency, (pos.y + moveSpeed * float(i)) * scaleFrequency, (pos.z + moveSpeed * float(i)) * scaleFrequency));
+                totalHeight += 1.0 * currentLayerAmplitude;//before changing it, also, only using 1.0 for the positive half of the range. Use -totalHeight for the mirrored, negative possible range
+                currentLayerAmplitude *= 0.5;//be sure not to let this value become zero or no layer will be added
+                scaleFrequency *= 1.8;
+                
+                //TODO OH the lowest is actually the bare minimum value of all noise layers added up, but that's very unlikely, the color range is working
+                
+                //totalHeight += 2.0 * scaleFrequency;//before changing it
+                //scaleFrequency *= layerFrequencyChange;
+                //moveSpeed *= layerFrequencyChange;
+            }
+            
+            noiseVal = smoothstep(-totalHeight, totalHeight, totalNoiseVal);//TODO I should keep track of all the changes made to the amplitude and the amounts added in layers to figure out the max and min values and use them with smoothstep to make NoiseVal 0 - 1 or -1 to 1 always
+            
             //float noiseVal = rand(pos.z);
             
-            amplitudeScale = 3.0;//divided by the number here to scale down, while color value multiplied in fragment shader sot scale up for better color range
-            float maxNoiseVal = 1.0 / amplitudeScale;//min is 0 max depends on amplitude changes
+            //amplitudeScale = 3.0;//divided by the number here to scale down, while color value multiplied in fragment shader sot scale up for better color range
+            //float maxNoiseVal = 1.0 / amplitudeScale;//min is 0 max depends on amplitude changes
             
-            noiseVal /= amplitudeScale;//scale the amplitude
+            //noiseVal /= amplitudeScale;//scale the amplitude
             
-            totalVertexNoise = noiseVal;//TODO add all the current vertex noise layers to this for coloring in the fragment shader
+            //totalVertexNoise = noiseVal;//TODO add all the current vertex noise layers to this for coloring in the fragment shader
             //Will probably need to track the max possible value after all layers are added
             
             vec4 modelViewPosition = modelViewMatrix * ((vec4(position + unitVector(pos) * vec3(noiseVal, noiseVal, noiseVal), 1.0)));//position is the position of the vertex while the modelViewMatrix is the position of the model in the scene
@@ -168,25 +201,27 @@ export function fragmentShader() {//executes per pixel
         //vec3[4] colors = vec3[](0.5, 0.5, 0.5);
         //int a[4] = int[4](4, 2, 0, 5, 1);
         
-        const int colorAmount = 6;
+        const int colorAmount = 7;
         vec3 myColors[colorAmount];//cannot initialize inline as far as I know
-        vec3 snowColor = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0);
+        vec3 snowColor = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0);//can't use a function to do these conversions because global vars need constant values
         vec3 mountainColor = vec3(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0);
         vec3 mountainBaseColor = vec3(153.0 / 255.0, 76.0 / 255.0, 0.0 / 255.0);
         vec3 grassColor = vec3(0.0 / 255.0, 153.0 / 255.0, 0.0 / 255.0);
+        vec3 dirtColor = vec3(153.0 / 255.0, 76.0 / 255.0, 0.0 / 255.0);
         vec3 sandColor = vec3(255.0 / 255.0, 255.0 / 255.0, 153.0 / 255.0);
         vec3 waterColor = vec3(51.0 / 255.0, 51.0 / 255.0, 255.0 / 255.0);
         
         vec3 colorFromNoise(float min, float max, float noiseVal)
         {
-            myColors[5] = snowColor;
-            myColors[4] = mountainColor;
-            myColors[3] = mountainBaseColor;
-            myColors[2] = grassColor;
+            myColors[6] = snowColor;
+            myColors[5] = mountainColor;
+            myColors[4] = mountainBaseColor;
+            myColors[3] = grassColor;
+            myColors[2] = dirtColor;
             myColors[1] = sandColor;
             myColors[0] = waterColor;
             
-            float noiseInRange = smoothstep(min, max, noiseVal);//figure out where the value should be in the range of 0 to 1
+            float noiseInRange = noiseVal;//smoothstep(min, max, noiseVal);//figure out where the value should be in the range of 0 to 1
             
             //I need to get the left and right indexes of the colors based on the current noiseInRange value
             //noiseInRange / (1.0 / colorAmount)
@@ -196,8 +231,8 @@ export function fragmentShader() {//executes per pixel
             vec3 currentColor = vec3(0.0, 0.0, 0.0);
             
             for(int i = 0; i < colorAmount - 1; i++)
-                if(((1.0 / float(colorAmount) * float(i)) < noiseInRange) && ((1.0 / float(colorAmount) * float(i + 1)) > noiseInRange))
-                    currentColor = mix(myColors[i], myColors[i + 1], smoothstep((1.0 / float(colorAmount) * float(i)), (1.0 / float(colorAmount) * float(i + 1)), noiseInRange));
+                if(((1.0 / float(colorAmount - 1) * float(i)) < noiseInRange) && ((1.0 / float(colorAmount - 1) * float(i + 1)) > noiseInRange))
+                    currentColor = mix(myColors[i], myColors[i + 1], smoothstep((1.0 / float(colorAmount - 1) * float(i)), (1.0 / float(colorAmount - 1) * float(i + 1)), noiseInRange));
             
             return currentColor;
         }
@@ -215,13 +250,15 @@ export function fragmentShader() {//executes per pixel
             //now I have the generated noise value per vertex that I could color based on, but, vertex shader is per vertex and fragment is per pixel, I don't know if that'll be a problem
             //having the noiseval passed in lets me work with it directly instead of trying to derive it from the magnitude from the center coords
             
-            float single = noiseVal * amplitudeScale;
+            //float single = noiseVal;// * amplitudeScale;
             
            
             //float single = magnitude(pos) / ((radius * 100.0));//the first number reduces the radius to 0 and the second number reduces the noise value added to the radius to 0
             //vec3 color = vec3(single, single, single);
         
-            vec3 color = colorFromNoise(0.0 - 1.0, 1.0 + 0.7, single);
+            //vec3 color = colorFromNoise(0.0 - 1.0, 1.0 + 0.7, single);//TODO I really need to figure this range out
+            //vec3 color = colorFromNoise(0.0 - 1.3, 1.0 + 4.3, single);//TODO I really need to figure this range out
+            vec3 color = colorFromNoise(0.0, 1.0, noiseVal/*single*/);//TODO I really need to figure this range out
         
             gl_FragColor = vec4(color, 1.0);//rgba used to set the color of the current pixel, currently all red
             

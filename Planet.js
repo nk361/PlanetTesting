@@ -66,7 +66,7 @@ function main() {
     //I keep seeing a diagram using 3 flat planes to find the points of the triangles and I think that might be the easiest way?
     //So I may try that first instead
 
-    let largerLeg = 2.5;
+    let largerLeg = 2.0;
     let smallerLeg = largerLeg / 2;
     let hypotenuse = Math.sqrt(Math.pow(largerLeg, 2) + Math.pow(smallerLeg, 2));//using the leg lengths for the first iteration positions and hypotenuse as the radius of the circumsphere
 
@@ -164,7 +164,7 @@ function main() {
     //to navigate from close point to close point, the changing factor for the index is the iteration the point was generated in added to the current index of the overall points
     //TODO remember that starting with 20 faces does not mean starting with 20 points, I have 12 points to start with and add 3 per face, per iteration
 
-    let iterations = 6;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
+    let iterations = 8;//TODO when applying noise to the points, I have to use the amount of iterations to figure out where close points are since older points are closer to the start and newer points are closer to he end
     for(let i = 0; i < iterations; i++) {
         let frozenFacesLength = faces.length;
         for(let j = 0; j < frozenFacesLength; j++) {
@@ -271,7 +271,7 @@ function main() {
             const speed = 1 + ndx * .1;
             const rot = time * speed / 2;
             //plnt.rotation.x = rot;
-            //plnt.rotation.y = rot;
+            plnt.rotation.y = rot / 4;
             //plnt.rotation.z = rot;
             if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
                 plnt.material.uniforms.delta.value = 0.0;
