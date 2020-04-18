@@ -7,6 +7,7 @@ export function vertexShader() {//executes per vertex
         uniform float delta;
         uniform float radius;
         uniform vec3 center;
+        varying float mirrorRange;
         
         //\tSimplex 3D Noise 
         //\tby Ian McEwan, Ashima Arts
@@ -129,7 +130,7 @@ export function vertexShader() {//executes per vertex
             //noiseVal = mountainousNoise(vec3((pos.x + moveSpeed) * scaleFrequency, (pos.y + moveSpeed) * scaleFrequency, (pos.z + moveSpeed) * scaleFrequency));
             
             const int noiseLayers = 6;
-            float layerFrequencyChange = 0.8;
+            //float layerFrequencyChange = 0.8;
             float totalNoiseVal = 0.0;
             float totalHeight = 0.0;
             float currentLayerAmplitude = 0.3;//decrease over time for smaller detail
@@ -139,7 +140,7 @@ export function vertexShader() {//executes per vertex
                 totalNoiseVal += currentLayerAmplitude * mountainousNoise(vec3((pos.x + moveSpeed * float(i)) * scaleFrequency, (pos.y + moveSpeed * float(i)) * scaleFrequency, (pos.z + moveSpeed * float(i)) * scaleFrequency));
                 totalHeight += 1.0 * currentLayerAmplitude;//before changing it, also, only using 1.0 for the positive half of the range. Use -totalHeight for the mirrored, negative possible range
                 currentLayerAmplitude *= 0.5;//be sure not to let this value become zero or no layer will be added
-                scaleFrequency *= 1.8;
+                scaleFrequency *= 2.0;
                 
                 //TODO OH the lowest is actually the bare minimum value of all noise layers added up, but that's very unlikely, the color range is working
                 
@@ -148,7 +149,9 @@ export function vertexShader() {//executes per vertex
                 //moveSpeed *= layerFrequencyChange;
             }
             
-            noiseVal = smoothstep(-totalHeight, totalHeight, totalNoiseVal);//TODO I should keep track of all the changes made to the amplitude and the amounts added in layers to figure out the max and min values and use them with smoothstep to make NoiseVal 0 - 1 or -1 to 1 always
+            mirrorRange = totalHeight;
+            
+            noiseVal = totalNoiseVal;//smoothstep(-totalHeight, totalHeight, totalNoiseVal);//TODO I should keep track of all the changes made to the amplitude and the amounts added in layers to figure out the max and min values and use them with smoothstep to make NoiseVal 0 - 1 or -1 to 1 always
             
             //float noiseVal = rand(pos.z);
             
@@ -178,6 +181,7 @@ export function fragmentShader() {//executes per pixel
         uniform float delta;//I think this is current time for use in animation changes
         uniform float radius;
         uniform vec3 center;
+        varying float mirrorRange;
         
         float magnitude(vec3 end)
         {
@@ -221,7 +225,7 @@ export function fragmentShader() {//executes per pixel
             myColors[1] = sandColor;
             myColors[0] = waterColor;
             
-            float noiseInRange = noiseVal;//smoothstep(min, max, noiseVal);//figure out where the value should be in the range of 0 to 1
+            float noiseInRange = smoothstep(min, max, noiseVal);//figure out where the value should be in the range of 0 to 1
             
             //I need to get the left and right indexes of the colors based on the current noiseInRange value
             //noiseInRange / (1.0 / colorAmount)
@@ -258,7 +262,7 @@ export function fragmentShader() {//executes per pixel
         
             //vec3 color = colorFromNoise(0.0 - 1.0, 1.0 + 0.7, single);//TODO I really need to figure this range out
             //vec3 color = colorFromNoise(0.0 - 1.3, 1.0 + 4.3, single);//TODO I really need to figure this range out
-            vec3 color = colorFromNoise(0.0, 1.0, noiseVal/*single*/);//TODO I really need to figure this range out
+            vec3 color = colorFromNoise(-1.0 * mirrorRange, mirrorRange, noiseVal/*single*/);//TODO I really need to figure this range out
         
             gl_FragColor = vec4(color, 1.0);//rgba used to set the color of the current pixel, currently all red
             

@@ -66,7 +66,7 @@ function main() {
     //I keep seeing a diagram using 3 flat planes to find the points of the triangles and I think that might be the easiest way?
     //So I may try that first instead
 
-    let largerLeg = 2.0;
+    let largerLeg = 2.5;
     let smallerLeg = largerLeg / 2;
     let hypotenuse = Math.sqrt(Math.pow(largerLeg, 2) + Math.pow(smallerLeg, 2));//using the leg lengths for the first iteration positions and hypotenuse as the radius of the circumsphere
 
