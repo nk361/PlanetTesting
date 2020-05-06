@@ -66,7 +66,7 @@ function main() {
     //I keep seeing a diagram using 3 flat planes to find the points of the triangles and I think that might be the easiest way?
     //So I may try that first instead
 
-    let largerLeg = 2.5;
+    let largerLeg = 2.2;
     let smallerLeg = largerLeg / 2;
     let hypotenuse = Math.sqrt(Math.pow(largerLeg, 2) + Math.pow(smallerLeg, 2));//using the leg lengths for the first iteration positions and hypotenuse as the radius of the circumsphere
 
@@ -273,7 +273,7 @@ function main() {
             //plnt.rotation.x = rot;
             plnt.rotation.y = rot / 4;
             //plnt.rotation.z = rot;
-            if(plnt.material.uniforms.delta.value > 100.53)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
+            if(plnt.material.uniforms.delta.value > 100.53 * 1000)//closest to 1 from cos(delta) to make the animation loop because cos(0) is 1
                 plnt.material.uniforms.delta.value = 0.0;
             else
                 plnt.material.uniforms.delta.value += 0.05;

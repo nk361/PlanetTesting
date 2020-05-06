@@ -89,6 +89,11 @@ export function vertexShader() {//executes per vertex
             return (2.0 * (1.0 - abs(snoise(vec3(v.x, v.y, v.z)))) - 1.0);
         }
         
+        float invertedMountainSeaTrench(vec3 v)
+        {
+            return -1.0 * mountainousNoise(v);
+        }
+        
         float magnitude(vec3 end)
         {
             //if(pow(end.x - center.x, 2.0) + pow(end.y - center.y, 2.0) + pow(end.z - center.z, 2.0) > 0.0)
@@ -106,6 +111,19 @@ export function vertexShader() {//executes per vertex
         float rand(float x)
         {
             return fract(sin(x)*1.0);
+        }
+        
+        float blockifyNoise(float noiseVal)//const parameters cannot be written to but are NOT const since they can have any value, can't have levels here
+        {
+            float blockifiedNoiseVal = 0.0;
+            const int levels = 22;//12
+            for(int i = 0; i < levels; i++)
+                if((noiseVal + mirrorRange) - ((mirrorRange * 2.0) / float(levels)) * float(i) < 0.0)
+                {
+                    blockifiedNoiseVal = (((mirrorRange * 2.0) / float(levels)) * float(i - 1)) - (mirrorRange - 0.001);//needs the 0.001 for a leniency range, to keep values around zero from barely going under mirrorRange
+                    break;
+                }
+            return blockifiedNoiseVal;
         }
         
         void main()
@@ -152,6 +170,22 @@ export function vertexShader() {//executes per vertex
             mirrorRange = totalHeight;
             
             noiseVal = totalNoiseVal;//smoothstep(-totalHeight, totalHeight, totalNoiseVal);//TODO I should keep track of all the changes made to the amplitude and the amounts added in layers to figure out the max and min values and use them with smoothstep to make NoiseVal 0 - 1 or -1 to 1 always
+            
+            //noiseVal = blockifyNoise(noiseVal);
+            
+            /*const int levels = 22;//12
+            for(int i = 0; i < levels; i++)
+                if((noiseVal + mirrorRange) - ((mirrorRange * 2.0) / float(levels)) * float(i) < 0.0)
+                {
+                    noiseVal = (((mirrorRange * 2.0) / float(levels)) * float(i - 1)) - (mirrorRange - 0.001);//needs the 0.001 for a leniency range, to keep values around zero from barely going under mirrorRange
+                    break;
+                }*/
+            
+            //it seems like there is an issue with noiseVals being around zero, below and above seem fine
+            //zero values seem to become low and out of mirrorRange
+            
+            //currently noiseVal can be negative and subtracting from a negative is just going to make it a larger negative number then that is subtracted from noiseVal which subtracting a negative adds it as if it's positive
+            
             
             //float noiseVal = rand(pos.z);
             
@@ -210,10 +244,12 @@ export function fragmentShader() {//executes per pixel
         vec3 snowColor = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0);//can't use a function to do these conversions because global vars need constant values
         vec3 mountainColor = vec3(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0);
         vec3 mountainBaseColor = vec3(153.0 / 255.0, 76.0 / 255.0, 0.0 / 255.0);
-        vec3 grassColor = vec3(0.0 / 255.0, 153.0 / 255.0, 0.0 / 255.0);
+        vec3 grassColor = vec3(0.0 / 255.0, 120.0 / 255.0, 0.0 / 255.0);
         vec3 dirtColor = vec3(153.0 / 255.0, 76.0 / 255.0, 0.0 / 255.0);
         vec3 sandColor = vec3(255.0 / 255.0, 255.0 / 255.0, 153.0 / 255.0);
         vec3 waterColor = vec3(51.0 / 255.0, 51.0 / 255.0, 255.0 / 255.0);
+        
+        float colorRanges[colorAmount];
         
         vec3 colorFromNoise(float min, float max, float noiseVal)
         {
